@@ -31,10 +31,10 @@
    ============================================================ */
 const CONFIG = {
   SHEET_ID: "1xzm75NNc0SYSU7_Kpo0SHf3LZYAMZx8eYIddfOolRDY",
-  ADMIN_PASSWORD: "Ambassadors1869",
+  ADMIN_PASSWORD: "change-me",
   TRACKER_TAB: "Tracker",
   SUBMISSIONS_TAB: "Form Responses 1",
-  GOOGLE_FORM_EMBED_URL: "https://docs.google.com/forms/d/e/1FAIpQLSe-TuzDshxPB3vm-qoGHx3nYSWO1y-VBdzW38OQ9T03F-A7og/viewform?embedded=true"
+  GOOGLE_FORM_URL: "https://docs.google.com/forms/d/e/1FAIpQLSe-TuzDshxPB3vm-qoGHx3nYSWO1y-VBdzW38OQ9T03F-A7og/viewform"
 };
 
 /* ============================================================
@@ -168,12 +168,28 @@ style.textContent = `
   .guide-meta{ color:var(--text-dim); font-size:12px; font-family:'Space Mono'; text-align:right; }
   .empty-tier{ padding:14px 24px; color:var(--text-dim); font-size:13px; font-style:italic; }
 
+  .table-wrap{ border:1px solid var(--border); border-radius:var(--radius); overflow:auto; background:var(--panel); }
+  table.tracker-table{ width:100%; border-collapse:collapse; font-size:13px; min-width:820px; }
+  table.tracker-table th{
+    position:sticky; top:0; background:var(--panel-2); text-align:left; padding:11px 14px;
+    font-family:'Oswald'; text-transform:uppercase; letter-spacing:.04em; font-size:12px; color:var(--gold);
+    cursor:pointer; white-space:nowrap; border-bottom:1px solid var(--border);
+  }
+  table.tracker-table th:hover{ color:#fff; }
+  table.tracker-table th .sort-arrow{ opacity:.5; font-size:10px; margin-left:4px; }
+  table.tracker-table td{ padding:10px 14px; border-bottom:1px solid var(--border); white-space:nowrap; }
+  table.tracker-table tr:last-child td{ border-bottom:none; }
+  table.tracker-table tr:hover td{ background:var(--panel-2); }
+  .priority-pill{
+    display:inline-block; padding:4px 10px; border-radius:20px; font-family:'Space Mono'; font-size:11px;
+    font-weight:700; white-space:nowrap;
+  }
+  .name-cell{ font-weight:600; }
+
   .form-card{
     background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:26px;
     max-width:760px; margin:0 auto;
   }
-  .form-embed-wrap{ border-radius:8px; overflow:hidden; border:1px solid var(--border); background:#fff; }
-  .form-embed-wrap iframe{ display:block; }
   .form-card h2{ font-size:20px; margin-top:0; color:var(--gold); }
   .field{ margin-bottom:16px; }
   .field label{ display:block; font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim); margin-bottom:6px; }
@@ -285,13 +301,18 @@ function renderShell(){
         <div class="toolbar">
           <input class="search" id="searchBox" placeholder="Search a guide by name…">
         </div>
-        <div class="ladder" id="ladder"></div>
+        <div class="table-wrap">
+          <table class="tracker-table" id="trackerTable"></table>
+        </div>
       </div>
 
       <div class="view" id="view-submit">
-        <div class="form-card">
+        <div class="form-card" style="text-align:center;">
           <h2>Submit an Evaluation</h2>
-          <div id="formArea"></div>
+          <p style="color:var(--text-dim);font-size:14px;">
+            This opens the real eval form your committee already uses. Submissions go straight into the usual response sheet.
+          </p>
+          <a class="btn btn-primary" style="display:inline-block;margin-top:10px;text-decoration:none;" href="${CONFIG.GOOGLE_FORM_URL}" target="_blank" rel="noopener" id="openFormLink">Open the Eval Form</a>
         </div>
       </div>
 
@@ -342,7 +363,7 @@ function renderShell(){
   document.getElementById('modalGo').addEventListener('click', tryAdminLogin);
   document.getElementById('adminPass').addEventListener('keydown', e=>{ if(e.key==='Enter') tryAdminLogin(); });
 
-  document.getElementById('searchBox').addEventListener('input', renderLadder);
+  document.getElementById('searchBox').addEventListener('input', renderTable);
 }
 
 function tryAdminLogin(){
@@ -359,12 +380,24 @@ function tryAdminLogin(){
 }
 
 /* ============================================================
-   TRACKER VIEW
+   TRACKER VIEW — full data table, all columns, sortable
    ============================================================ */
+const TABLE_COLS = [
+  { key: 0, label: "First Name" },
+  { key: 1, label: "Last Name" },
+  { key: 2, label: "Eval Priority" },
+  { key: 3, label: "Tour Eval Date" },
+  { key: 4, label: "Tour Eval Time" },
+  { key: 5, label: "Evaluator" },
+  { key: 6, label: "Form Submitted?" },
+  { key: 7, label: "Feedback Reviewed?" }
+];
+let sortCol = 2, sortDir = 1;
+
 function renderStats(){
   const total = trackerRows.length;
   const needsNow = trackerRows.filter(r => tierFor(r[2]).name === "First Priority to Eval").length;
-  const evaled = trackerRows.filter(r => ["Evaled This Semester","No Need to Eval"].includes(tierFor(r[2]).name)).length;
+  const evaled = trackerRows.filter(r => ["Evaled This Semester","No Need to Eval","Not Needed to be Evaled"].includes(tierFor(r[2]).name)).length;
   document.getElementById('statStrip').innerHTML = `
     <div class="stat"><b>${total}</b>Total Guides</div>
     <div class="stat"><b>${needsNow}</b>First Priority</div>
@@ -372,57 +405,53 @@ function renderStats(){
   `;
 }
 
-function renderLadder(){
+function renderTable(){
   const q = (document.getElementById('searchBox').value || "").toLowerCase();
-  const grouped = {};
-  TIERS.forEach(t => grouped[t.name] = []);
-  trackerRows.forEach(r=>{
-    const [first,last,priority,date,time,evaler] = r;
-    const name = `${first||""} ${last||""}`.trim();
-    if(q && !name.toLowerCase().includes(q)) return;
-    const tierName = tierFor(priority).name;
-    if(!grouped[tierName]) grouped[tierName] = [];
-    grouped[tierName].push({first,last,date,time,evaler});
+  let rows = trackerRows.filter(r=>{
+    if(!q) return true;
+    const name = `${r[0]||""} ${r[1]||""}`.toLowerCase();
+    return name.includes(q);
   });
 
-  const ladder = document.getElementById('ladder');
-  ladder.innerHTML = TIERS.map((tier, idx) => {
-    const list = grouped[tier.name] || [];
-    if(list.length === 0 && q) return "";
-    const rowsHtml = list.length ? list.map(p => `
-      <div class="guide-row">
-        <div class="guide-name">${p.first} ${p.last}</div>
-        <div class="guide-meta">${p.evaler ? 'Evaluator: '+p.evaler : ''} ${p.date ? '· '+p.date : ''}</div>
-      </div>
-    `).join('') : `<div class="empty-tier">No one in this tier${q ? ' matching your search' : ''}.</div>`;
-    return `
-      <div class="tier ${idx===0 ? 'open':''}" style="--tier-color:${tier.color}">
-        <div class="tier-head" onclick="this.parentElement.classList.toggle('open')">
-          <h3><span style="width:10px;height:10px;border-radius:50%;background:${tier.color};display:inline-block;"></span>${tier.name}</h3>
-          <div style="display:flex;align-items:center;gap:14px;">
-            <span class="tier-count">${list.length} guide${list.length===1?'':'s'}</span>
-            <span class="chevron">▾</span>
-          </div>
-        </div>
-        <div class="tier-body">${rowsHtml}</div>
-      </div>
-    `;
-  }).join('');
-}
+  const tierRank = t => { const i = TIERS.findIndex(x => x.name === tierFor(t).name); return i === -1 ? 99 : i; };
+  rows = rows.slice().sort((a,b)=>{
+    let av = sortCol === 2 ? tierRank(a[2]) : (a[sortCol] || "");
+    let bv = sortCol === 2 ? tierRank(b[2]) : (b[sortCol] || "");
+    if(typeof av === 'string') av = av.toLowerCase();
+    if(typeof bv === 'string') bv = bv.toLowerCase();
+    if(av < bv) return -1*sortDir;
+    if(av > bv) return 1*sortDir;
+    return 0;
+  });
 
-/* ============================================================
-   SUBMIT VIEW — embeds the real Google Form, no backend needed
-   ============================================================ */
-function renderForm(){
-  document.getElementById('formArea').innerHTML = `
-    <p style="color:var(--text-dim);font-size:13px;margin-top:0;">
-      This is the same eval form the committee has always used — it's just embedded here for convenience.
-      Submissions go straight into the usual response sheet.
-    </p>
-    <div class="form-embed-wrap">
-      <iframe src="${CONFIG.GOOGLE_FORM_EMBED_URL}" width="100%" height="1400" frameborder="0" marginheight="0" marginwidth="0">Loading form…</iframe>
-    </div>
-  `;
+  const table = document.getElementById('trackerTable');
+  const theadHtml = `<thead><tr>${TABLE_COLS.map(c=>`
+    <th data-col="${c.key}">${c.label}${sortCol===c.key ? `<span class="sort-arrow">${sortDir===1?'▲':'▼'}</span>` : ''}</th>
+  `).join('')}</tr></thead>`;
+
+  const bodyRows = rows.length ? rows.map(r=>{
+    const tier = tierFor(r[2]);
+    return `<tr>
+      <td class="name-cell">${r[0]||''}</td>
+      <td class="name-cell">${r[1]||''}</td>
+      <td><span class="priority-pill" style="background:${tier.color};color:${tier.text};">${tier.name}</span></td>
+      <td>${r[3]||''}</td>
+      <td>${r[4]||''}</td>
+      <td>${r[5]||''}</td>
+      <td>${String(r[6]).toUpperCase()==='TRUE' ? '✅' : ''}</td>
+      <td>${String(r[7]).toUpperCase()==='TRUE' ? '✅' : ''}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:24px;">No guides match your search.</td></tr>`;
+
+  table.innerHTML = theadHtml + `<tbody>${bodyRows}</tbody>`;
+
+  table.querySelectorAll('th').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const col = Number(th.dataset.col);
+      if(sortCol === col){ sortDir *= -1; } else { sortCol = col; sortDir = 1; }
+      renderTable();
+    });
+  });
 }
 
 /* ============================================================
@@ -463,8 +492,7 @@ function boot(){
   loadTab(CONFIG.TRACKER_TAB, (json)=>{
     trackerRows = rowsFromGviz(json).filter(r => r[0]);
     renderStats();
-    renderLadder();
-    renderForm();
+    renderTable();
     loadTab(CONFIG.SUBMISSIONS_TAB, (json2)=>{
       submissionRows = rowsFromGviz(json2).filter(r => r[0]);
       renderSubmissionLog();
