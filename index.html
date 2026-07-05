@@ -31,9 +31,9 @@
    ============================================================ */
 const CONFIG = {
   SHEET_ID: "1xzm75NNc0SYSU7_Kpo0SHf3LZYAMZx8eYIddfOolRDY",
-  ADMIN_PASSWORD: "change-me",
-  TRACKER_TAB: "Tracker",
-  SUBMISSIONS_TAB: "Form Responses 1",
+  ADMIN_PASSWORD: "Ambassadors1869",
+  TRACKER_GID: "2033116301",
+  SUBMISSIONS_GID: "0",
   GOOGLE_FORM_URL: "https://docs.google.com/forms/d/e/1FAIpQLSe-TuzDshxPB3vm-qoGHx3nYSWO1y-VBdzW38OQ9T03F-A7og/viewform"
 };
 
@@ -148,26 +148,6 @@ style.textContent = `
   }
   .stat b{ display:block; font-family:'Oswald'; font-size:22px; color:var(--gold); letter-spacing:0; }
 
-  .ladder{ display:flex; flex-direction:column; gap:16px; }
-  .tier{ border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); background:var(--panel); }
-  .tier-head{
-    display:flex; align-items:center; justify-content:space-between; padding:12px 18px; cursor:pointer;
-    border-left:6px solid var(--tier-color);
-  }
-  .tier-head h3{ margin:0; font-size:15px; color:var(--text); display:flex; align-items:center; gap:10px; }
-  .tier-count{ font-family:'Space Mono'; font-size:12px; color:var(--text-dim); }
-  .chevron{ transition:transform .2s; color:var(--text-dim); }
-  .tier.open .chevron{ transform:rotate(180deg); }
-  .tier-body{ display:none; }
-  .tier.open .tier-body{ display:block; }
-  .guide-row{
-    display:flex; align-items:center; justify-content:space-between; padding:11px 18px 11px 24px;
-    border-top:1px solid var(--border); font-size:14px;
-  }
-  .guide-name{ font-weight:600; }
-  .guide-meta{ color:var(--text-dim); font-size:12px; font-family:'Space Mono'; text-align:right; }
-  .empty-tier{ padding:14px 24px; color:var(--text-dim); font-size:13px; font-style:italic; }
-
   .table-wrap{ border:1px solid var(--border); border-radius:var(--radius); overflow:auto; background:var(--panel); }
   table.tracker-table{ width:100%; border-collapse:collapse; font-size:13px; min-width:820px; }
   table.tracker-table th{
@@ -245,15 +225,14 @@ document.head.appendChild(style);
 /* ============================================================
    GVIZ LOADER
    ============================================================ */
-function loadTab(tabName, cb, sheetId){
-  sheetId = sheetId || CONFIG.SHEET_ID;
-  const cbName = 'gvizcb_' + tabName.replace(/\W/g,'') + '_' + Math.floor(Math.random()*1e9);
+function loadTab(gid, cb){
+  const cbName = 'gvizcb_' + gid + '_' + Math.floor(Math.random()*1e9);
   window[cbName] = function(json){
     cb(json);
     delete window[cbName];
     tag.remove();
   };
-  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json;responseHandler=${cbName}&sheet=${encodeURIComponent(tabName)}&ts=${Date.now()}`;
+  const url = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json;responseHandler=${cbName}&gid=${gid}&ts=${Date.now()}`;
   const tag = document.createElement('script');
   tag.src = url;
   tag.onerror = () => cb(null);
@@ -489,11 +468,11 @@ function renderSubmissionLog(){
    ============================================================ */
 function boot(){
   renderShell();
-  loadTab(CONFIG.TRACKER_TAB, (json)=>{
+  loadTab(CONFIG.TRACKER_GID, (json)=>{
     trackerRows = rowsFromGviz(json).filter(r => r[0]);
     renderStats();
     renderTable();
-    loadTab(CONFIG.SUBMISSIONS_TAB, (json2)=>{
+    loadTab(CONFIG.SUBMISSIONS_GID, (json2)=>{
       submissionRows = rowsFromGviz(json2).filter(r => r[0]);
       renderSubmissionLog();
     });
