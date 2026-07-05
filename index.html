@@ -6,25 +6,16 @@
 <title>Fall '26 Eval Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style>
-  /* ============================================================
-     CONFIG — fill these in before deploying
-     ============================================================ */
-</style>
 </head>
 <body>
 
 <!-- ============================================================
      ⚙️ SETUP — read this before you deploy
-     1. Put your Google Sheet ID below in CONFIG.SHEET_ID
-        (the long string in the sheet's URL between /d/ and /edit)
-     2. Paste apps-script.gs into Extensions > Apps Script on that
-        sheet, deploy as a Web App, and put the URL in
-        CONFIG.APPS_SCRIPT_URL
-     3. Pick a real admin password in CONFIG.ADMIN_PASSWORD
-     4. Make sure your sheet has two tabs named exactly "Tracker"
-        and "Submissions" (see SETUP.md for the Submissions layout)
-     Full instructions are in SETUP.md.
+     1. Share the spreadsheet as "Anyone with the link (Viewer)":
+        https://docs.google.com/spreadsheets/d/1xzm75NNc0SYSU7_Kpo0SHf3LZYAMZx8eYIddfOolRDY
+     2. Pick a real admin password in CONFIG.ADMIN_PASSWORD below
+     3. Push this file to GitHub Pages
+     No Apps Script, no backend — see SETUP.md for full details.
      ============================================================ -->
 
 <div id="app">
@@ -39,11 +30,11 @@
    CONFIG
    ============================================================ */
 const CONFIG = {
-  SHEET_ID: "YOUR_GOOGLE_SHEET_ID_HERE",
-  APPS_SCRIPT_URL: "YOUR_APPS_SCRIPT_WEB_APP_URL_HERE",
-  ADMIN_PASSWORD: "change-me",
+  SHEET_ID: "1xzm75NNc0SYSU7_Kpo0SHf3LZYAMZx8eYIddfOolRDY",
+  ADMIN_PASSWORD: "Ambassadors1869",
   TRACKER_TAB: "Tracker",
-  SUBMISSIONS_TAB: "Submissions"
+  SUBMISSIONS_TAB: "Form Responses 1",
+  GOOGLE_FORM_EMBED_URL: "https://docs.google.com/forms/d/e/1FAIpQLSe-TuzDshxPB3vm-qoGHx3nYSWO1y-VBdzW38OQ9T03F-A7og/viewform?embedded=true"
 };
 
 /* ============================================================
@@ -179,8 +170,10 @@ style.textContent = `
 
   .form-card{
     background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:26px;
-    max-width:640px; margin:0 auto;
+    max-width:760px; margin:0 auto;
   }
+  .form-embed-wrap{ border-radius:8px; overflow:hidden; border:1px solid var(--border); background:#fff; }
+  .form-embed-wrap iframe{ display:block; }
   .form-card h2{ font-size:20px; margin-top:0; color:var(--gold); }
   .field{ margin-bottom:16px; }
   .field label{ display:block; font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim); margin-bottom:6px; }
@@ -236,14 +229,15 @@ document.head.appendChild(style);
 /* ============================================================
    GVIZ LOADER
    ============================================================ */
-function loadTab(tabName, cb){
+function loadTab(tabName, cb, sheetId){
+  sheetId = sheetId || CONFIG.SHEET_ID;
   const cbName = 'gvizcb_' + tabName.replace(/\W/g,'') + '_' + Math.floor(Math.random()*1e9);
   window[cbName] = function(json){
     cb(json);
     delete window[cbName];
     tag.remove();
   };
-  const url = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json;responseHandler=${cbName}&sheet=${encodeURIComponent(tabName)}&ts=${Date.now()}`;
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json;responseHandler=${cbName}&sheet=${encodeURIComponent(tabName)}&ts=${Date.now()}`;
   const tag = document.createElement('script');
   tag.src = url;
   tag.onerror = () => cb(null);
@@ -417,113 +411,18 @@ function renderLadder(){
 }
 
 /* ============================================================
-   SUBMIT FORM
+   SUBMIT VIEW — embeds the real Google Form, no backend needed
    ============================================================ */
-let selectedRating = null;
 function renderForm(){
-  const names = trackerRows.map(r => `${r[0]||""} ${r[1]||""}`.trim()).filter(Boolean).sort();
   document.getElementById('formArea').innerHTML = `
-    <div class="field">
-      <label>Your Name (Evaluator)</label>
-      <input id="f_evaluator" type="text" placeholder="e.g. Audrey P.">
+    <p style="color:var(--text-dim);font-size:13px;margin-top:0;">
+      This is the same eval form the committee has always used — it's just embedded here for convenience.
+      Submissions go straight into the usual response sheet.
+    </p>
+    <div class="form-embed-wrap">
+      <iframe src="${CONFIG.GOOGLE_FORM_EMBED_URL}" width="100%" height="1400" frameborder="0" marginheight="0" marginwidth="0">Loading form…</iframe>
     </div>
-    <div class="field">
-      <label>Guide Being Evaluated</label>
-      <select id="f_guide">
-        <option value="">Select a guide…</option>
-        ${names.map(n=>`<option value="${n}">${n}</option>`).join('')}
-      </select>
-    </div>
-    <div class="row-2">
-      <div class="field">
-        <label>Tour Date</label>
-        <input id="f_date" type="date">
-      </div>
-      <div class="field">
-        <label>Tour Time</label>
-        <input id="f_time" type="time">
-      </div>
-    </div>
-    <div class="field">
-      <label>Overall Rating (3 = average, solid tour)</label>
-      <div class="rating-group" id="ratingGroup">
-        ${[1,2,3,4,5].map(n=>`<div class="rating-opt" data-val="${n}">${n}</div>`).join('')}
-      </div>
-    </div>
-    <div class="field">
-      <label>What went well</label>
-      <textarea id="f_well" placeholder="Specific things they did nicely…"></textarea>
-    </div>
-    <div class="field">
-      <label>Areas to work on</label>
-      <textarea id="f_improve" placeholder="Keep it constructive and specific…"></textarea>
-    </div>
-    <div class="field">
-      <label>Additional context (optional)</label>
-      <textarea id="f_notes"></textarea>
-    </div>
-    <button class="btn btn-primary" id="submitBtn" style="width:100%;">Submit Evaluation</button>
-    <div class="submit-msg" id="submitMsg"></div>
   `;
-  document.querySelectorAll('.rating-opt').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      document.querySelectorAll('.rating-opt').forEach(x=>x.classList.remove('selected'));
-      el.classList.add('selected');
-      selectedRating = el.dataset.val;
-    });
-  });
-  document.getElementById('submitBtn').addEventListener('click', submitEval);
-}
-
-function submitEval(){
-  const evaluator = document.getElementById('f_evaluator').value.trim();
-  const guideFull = document.getElementById('f_guide').value;
-  const msg = document.getElementById('submitMsg');
-  if(!evaluator || !guideFull){
-    msg.textContent = "Please add your name and pick who you evaluated.";
-    msg.className = "submit-msg err";
-    return;
-  }
-  const parts = guideFull.split(' ');
-  const guideLast = parts.pop();
-  const guideFirst = parts.join(' ');
-  const payload = {
-    evaluatorName: evaluator,
-    guideFirst, guideLast,
-    tourDate: document.getElementById('f_date').value,
-    tourTime: document.getElementById('f_time').value,
-    rating: selectedRating || "",
-    wentWell: document.getElementById('f_well').value,
-    improve: document.getElementById('f_improve').value,
-    notes: document.getElementById('f_notes').value
-  };
-
-  if(CONFIG.APPS_SCRIPT_URL.includes("YOUR_APPS_SCRIPT")){
-    msg.textContent = "Setup incomplete: add your Apps Script URL to CONFIG before this can save.";
-    msg.className = "submit-msg err";
-    return;
-  }
-
-  msg.textContent = "Submitting…";
-  msg.className = "submit-msg";
-  fetch(CONFIG.APPS_SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload)
-  }).then(r=>r.json()).then(res=>{
-    msg.textContent = "Evaluation submitted — thank you!";
-    msg.className = "submit-msg ok";
-    document.getElementById('f_evaluator').value='';
-    document.getElementById('f_guide').value='';
-    document.getElementById('f_well').value='';
-    document.getElementById('f_improve').value='';
-    document.getElementById('f_notes').value='';
-    selectedRating = null;
-    document.querySelectorAll('.rating-opt').forEach(x=>x.classList.remove('selected'));
-  }).catch(err=>{
-    msg.textContent = "Something went wrong submitting. Try again in a minute.";
-    msg.className = "submit-msg err";
-  });
 }
 
 /* ============================================================
@@ -535,17 +434,20 @@ function renderSubmissionLog(){
     el.innerHTML = `<div class="empty-tier">No submissions yet.</div>`;
     return;
   }
+  // Real sheet column order:
+  // 0 Timestamp, 1 Tour Time, 2 Tour Date, 3 Guide Name, 4 Evaluator, 5 Uniform,
+  // 6 Communication, 7 explain, 8 Spirit, 9 explain, 10 Knowledge, 11 explain,
+  // 12 Adapt, 13 explain, 14 Professionalism, 15 explain, 16 Engagement, 17 explain,
+  // 18 Timing, 19 explain, 20 Notes, 21 Overall
   el.innerHTML = submissionRows.slice().reverse().map(r=>{
-    const [timestamp, evaluator, gFirst, gLast, date, time, rating, well, improve, notes] = r;
+    const timestamp=r[0], guide=r[3], evaluator=r[4], overall=r[21], notes=r[20];
     return `
       <div class="sub-item">
         <div class="top-line">
-          <span>${gFirst} ${gLast} · Rated ${rating || "–"}/5</span>
-          <span>${evaluator} · ${timestamp || ""}</span>
+          <span>${guide || ""} · Overall ${overall || "–"}/5</span>
+          <span>${evaluator || ""} · ${timestamp || ""}</span>
         </div>
         <div class="body-text">
-          ${well ? `<div><b>Went well:</b> ${well}</div>` : ""}
-          ${improve ? `<div><b>To work on:</b> ${improve}</div>` : ""}
           ${notes ? `<div><b>Notes:</b> ${notes}</div>` : ""}
         </div>
       </div>
