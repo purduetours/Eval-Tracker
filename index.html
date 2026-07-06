@@ -36,11 +36,9 @@ const CONFIG = {
   SUBMISSIONS_GID: "0",
   GOOGLE_FORM_URL: "https://docs.google.com/forms/d/e/1FAIpQLSe-TuzDshxPB3vm-qoGHx3nYSWO1y-VBdzW38OQ9T03F-A7og/viewform",
   COORDINATOR_EMAIL: "purduetours@gmail.com",
-  // TODO: once the real tour schedule sheet exists, set SIGNUP_SHEET_ID / SIGNUP_GID
-  // here and swap loadSignupSlots() over to reading real open slots instead of
-  // pulling unassigned guides from Tracker.
-  SIGNUP_SHEET_ID: null,
-  SIGNUP_GID: null
+  CLAIM_FORM_URL: "https://docs.google.com/forms/d/e/1FAIpQLSdP8EhMYNzY-_Y492R1ROLLpKQndzW2AFP5uNqqCOZSES4F5w/viewform",
+  CLAIM_SHEET_ID: "1niDAHcjy3Ytd80HPsaSk_oqyFPDWVXkAbeKLOy3V8Bs",
+  CLAIM_GID: "0"
 };
 
 /* ============================================================
@@ -154,26 +152,6 @@ style.textContent = `
   }
   .stat b{ display:block; font-family:'Oswald'; font-size:22px; color:var(--gold); letter-spacing:0; }
 
-  .ladder{ display:flex; flex-direction:column; gap:16px; }
-  .tier{ border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); background:var(--panel); }
-  .tier-head{
-    display:flex; align-items:center; justify-content:space-between; padding:12px 18px; cursor:pointer;
-    border-left:6px solid var(--tier-color);
-  }
-  .tier-head h3{ margin:0; font-size:15px; color:var(--text); display:flex; align-items:center; gap:10px; }
-  .tier-count{ font-family:'Space Mono'; font-size:12px; color:var(--text-dim); }
-  .chevron{ transition:transform .2s; color:var(--text-dim); }
-  .tier.open .chevron{ transform:rotate(180deg); }
-  .tier-body{ display:none; }
-  .tier.open .tier-body{ display:block; }
-  .guide-row{
-    display:flex; align-items:center; justify-content:space-between; padding:11px 18px 11px 24px;
-    border-top:1px solid var(--border); font-size:14px;
-  }
-  .guide-name{ font-weight:600; }
-  .guide-meta{ color:var(--text-dim); font-size:12px; font-family:'Space Mono'; text-align:right; }
-  .empty-tier{ padding:14px 24px; color:var(--text-dim); font-size:13px; font-style:italic; }
-
   .table-wrap{ border:1px solid var(--border); border-radius:var(--radius); overflow:auto; background:var(--panel); }
   table.tracker-table{ width:100%; border-collapse:collapse; font-size:13px; min-width:820px; }
   table.tracker-table th{
@@ -192,37 +170,31 @@ style.textContent = `
   }
   .name-cell{ font-weight:600; }
   .signup-note{ margin-bottom:16px; }
+  .signup-grid{ display:flex; gap:6px; min-width:max-content; padding-bottom:6px; }
+  .signup-col{ display:flex; flex-direction:column; gap:6px; width:150px; flex-shrink:0; }
+  .signup-col-head{
+    font-family:'Oswald'; font-size:11px; text-transform:uppercase; letter-spacing:.04em;
+    color:var(--text-dim); text-align:center; padding:4px 0 8px;
+  }
+  .signup-cell{
+    border-radius:8px; padding:8px 10px; cursor:pointer; transition:filter .15s;
+    font-size:12px; font-weight:700; text-align:center; min-height:44px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  }
+  .signup-cell:hover{ filter:brightness(1.12); }
+  .signup-claim-tag{ font-family:'Space Mono'; font-size:9.5px; font-weight:400; opacity:.9; }
 
   .form-card{
     background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:26px;
     max-width:760px; margin:0 auto;
   }
   .form-card h2{ font-size:20px; margin-top:0; color:var(--gold); }
-  .field{ margin-bottom:16px; }
-  .field label{ display:block; font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim); margin-bottom:6px; }
-  .field input, .field select, .field textarea{
-    width:100%; background:var(--panel-2); border:1px solid var(--border); border-radius:8px;
-    padding:10px 12px; color:var(--text); font-family:'Inter'; font-size:14px;
-  }
-  .field textarea{ min-height:80px; resize:vertical; }
-  .field input:focus, .field select:focus, .field textarea:focus{ outline:none; border-color:var(--gold); }
-  .row-2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-  .rating-group{ display:flex; gap:8px; }
-  .rating-opt{
-    flex:1; text-align:center; padding:10px 0; border:1px solid var(--border); border-radius:8px; cursor:pointer;
-    font-family:'Oswald'; color:var(--text-dim);
-  }
-  .rating-opt.selected{ border-color:var(--gold); color:var(--gold); background:#2a2410; }
-  .submit-msg{ font-size:13px; margin-top:10px; }
-  .submit-msg.ok{ color:#8AB17D; } .submit-msg.err{ color:#E63946; }
-
   .admin-only{ display:none; }
   body.is-admin .admin-only{ display:block; }
 
   .sub-log{ display:flex; flex-direction:column; gap:10px; }
   .sub-item{ background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; }
   .sub-item .top-line{ display:flex; justify-content:space-between; font-size:13px; color:var(--text-dim); margin-bottom:6px; font-family:'Space Mono'; }
-  .sub-item .body-text{ font-size:14px; line-height:1.5; }
   .sub-item .chevron{ display:inline-block; transition:transform .2s; }
   .sub-item.open .chevron{ transform:rotate(180deg); }
   .sub-detail{ display:none; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
@@ -230,6 +202,7 @@ style.textContent = `
   .detail-row{ display:grid; grid-template-columns:220px 1fr; gap:12px; padding:6px 0; font-size:13px; }
   .detail-label{ color:var(--gold); font-family:'Space Mono'; font-size:11px; text-transform:uppercase; letter-spacing:.03em; }
   .detail-val{ color:var(--text); line-height:1.4; }
+  .empty-tier{ padding:14px 24px; color:var(--text-dim); font-size:13px; font-style:italic; }
 
   .modal-bg{
     position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; z-index:50;
@@ -249,7 +222,6 @@ style.textContent = `
   footer{ text-align:center; padding:30px; color:var(--text-dim); font-size:12px; }
 
   @media (max-width:600px){
-    .row-2{ grid-template-columns:1fr; }
     header.top{ padding:14px 16px; }
     main{ padding:20px 14px 60px; }
   }
@@ -323,8 +295,8 @@ function renderShell(){
 
       <div class="view" id="view-signup">
         <div class="signup-note" id="signupNote"></div>
-        <div class="table-wrap">
-          <table class="tracker-table" id="signupTable"></table>
+        <div class="table-wrap" style="overflow-x:auto;">
+          <div class="signup-grid" id="signupGrid"></div>
         </div>
       </div>
 
@@ -353,21 +325,6 @@ function renderShell(){
         <div class="modal-actions">
           <button class="btn" id="modalCancel">Cancel</button>
           <button class="btn btn-primary" id="modalGo">Sign In</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="modal-bg" id="claimModalBg">
-      <div class="modal" style="width:340px;">
-        <h3>Claim an Eval</h3>
-        <p style="font-size:13px;color:var(--text-dim);margin-top:-8px;">Evaluating: <b id="claimGuideLabel" style="color:var(--text);"></b></p>
-        <input type="text" id="claimEvaluator" placeholder="Your name">
-        <input type="date" id="claimDate">
-        <input type="time" id="claimTime">
-        <div class="modal-err" id="claimErr"></div>
-        <div class="modal-actions">
-          <button class="btn" onclick="closeClaimModal()">Cancel</button>
-          <button class="btn btn-primary" onclick="submitClaim()">Claim</button>
         </div>
       </div>
     </div>
@@ -493,75 +450,64 @@ function renderTable(){
 
 /* ============================================================
    SIGN UP FOR TOURS
-   Improvised for now: shows Tracker guides with no evaluator
-   assigned yet, sorted most-urgent-first. "Claim" opens a modal
-   for your name + eval date/time, then emails it to the
-   coordinator. Swap this for a real schedule sheet once
-   CONFIG.SIGNUP_SHEET_ID / SIGNUP_GID are set.
+   Grid layout mirrors the old Schedule tab: cohort columns, guides
+   stacked underneath, color-coded by eval priority. Guides are
+   chunked from Tracker into columns of 8 as a placeholder — swap
+   CHUNK_SIZE / the data source once the real Fall 26 schedule
+   sheet (grouped by actual tour cohort) is available.
+   Claims are real now: clicking a guide opens the actual "Eval
+   Claim" Google Form, and claims read back live from its response
+   sheet — visible to everyone, not just one browser.
    ============================================================ */
+let claimRows = []; // rows from the Eval Claim response sheet
+
+function latestClaimFor(guideName){
+  // Claim sheet columns: 0 Timestamp, 1 Guide, 2 Evaluator, 3 Date, 4 Time
+  // Later rows are more recent; find the last matching one.
+  for(let i = claimRows.length - 1; i >= 0; i--){
+    const r = claimRows[i];
+    if((r[1] || '').trim().toLowerCase() === guideName.trim().toLowerCase()){
+      return { evaluator: r[2] || '', date: r[3] || '', time: r[4] || '' };
+    }
+  }
+  return null;
+}
+
 function renderSignup(){
   const noteEl = document.getElementById('signupNote');
-  const usingPlaceholder = !CONFIG.SIGNUP_SHEET_ID;
-
-  noteEl.innerHTML = usingPlaceholder ? `
-    <p style="color:var(--text-dim);font-size:13px;max-width:700px;">
-      This is a placeholder view built from the Tracker tab — it lists guides who don't have an evaluator
-      assigned yet, most urgent first. "Claim" asks for your name and eval date/time, then emails that to
-      the coordinator. Once the real tour schedule sheet exists, this will show actual open time slots instead.
+  noteEl.innerHTML = `
+    <p style="color:var(--text-dim);font-size:13px;max-width:760px;">
+      Placeholder layout — guides are grouped into columns of 8 just to mirror how the real tour schedule
+      will look. Click any guide to open the claim form; once submitted, everyone sees the claim show up
+      here (this reads live from the real response sheet — refresh to see new claims).
     </p>
-  ` : '';
+  `;
 
-  const tierRank = t => { const i = TIERS.findIndex(x => x.name === tierFor(t).name); return i === -1 ? 99 : i; };
-  const unassigned = trackerRows
-    .filter(r => !r[5] && !["No Need to Eval","Evaled This Semester","Not Needed to be Evaled"].includes(tierFor(r[2]).name))
-    .slice()
-    .sort((a,b) => tierRank(a[2]) - tierRank(b[2]));
-
-  const table = document.getElementById('signupTable');
-  const theadHtml = `<thead><tr><th>Guide</th><th>Eval Priority</th><th></th></tr></thead>`;
-  const bodyRows = unassigned.length ? unassigned.map(r=>{
-    const tier = tierFor(r[2]);
-    const name = `${r[0]||''} ${r[1]||''}`.trim();
-    return `<tr>
-      <td class="name-cell">${name}</td>
-      <td><span class="priority-pill" style="background:${tier.color};color:${tier.text};">${tier.name}</span></td>
-      <td><button class="btn btn-primary" style="font-size:12px;padding:6px 12px;" onclick="openClaimModal('${name.replace(/'/g,"\\'")}','${tier.name}')">Claim</button></td>
-    </tr>`;
-  }).join('') : `<tr><td colspan="3" style="text-align:center;color:var(--text-dim);padding:24px;">Everyone who needs an eval already has one assigned. 🎉</td></tr>`;
-
-  table.innerHTML = theadHtml + `<tbody>${bodyRows}</tbody>`;
-}
-
-let claimGuideName = '', claimTierName = '';
-function openClaimModal(name, tierName){
-  claimGuideName = name;
-  claimTierName = tierName;
-  document.getElementById('claimGuideLabel').textContent = name;
-  document.getElementById('claimEvaluator').value = '';
-  document.getElementById('claimDate').value = '';
-  document.getElementById('claimTime').value = '';
-  document.getElementById('claimErr').textContent = '';
-  document.getElementById('claimModalBg').classList.add('open');
-  document.getElementById('claimEvaluator').focus();
-}
-function closeClaimModal(){
-  document.getElementById('claimModalBg').classList.remove('open');
-}
-function submitClaim(){
-  const evaluator = document.getElementById('claimEvaluator').value.trim();
-  const date = document.getElementById('claimDate').value;
-  const time = document.getElementById('claimTime').value;
-  if(!evaluator || !date || !time){
-    document.getElementById('claimErr').textContent = 'Fill in your name, date, and time.';
-    return;
+  const grid = document.getElementById('signupGrid');
+  const CHUNK_SIZE = 8;
+  const chunks = [];
+  for(let i=0; i<trackerRows.length; i += CHUNK_SIZE){
+    chunks.push(trackerRows.slice(i, i+CHUNK_SIZE));
   }
-  const subject = encodeURIComponent(`Claiming eval: ${claimGuideName}`);
-  const body = encodeURIComponent(
-    `Evaluator: ${evaluator}\nGuide: ${claimGuideName} (${claimTierName})\nTour date: ${date}\nTour time: ${time}\n\nPlease update the Tracker with this info.`
-  );
-  window.location.href = `mailto:${CONFIG.COORDINATOR_EMAIL}?subject=${subject}&body=${body}`;
-  closeClaimModal();
+
+  grid.innerHTML = chunks.map((chunk, colIdx) => `
+    <div class="signup-col">
+      <div class="signup-col-head">Group ${colIdx+1}</div>
+      ${chunk.map(r => {
+        const name = `${r[0]||''} ${r[1]||''}`.trim();
+        const tier = tierFor(r[2]);
+        const claim = latestClaimFor(name);
+        return `
+          <div class="signup-cell" style="background:${tier.color};color:${tier.text};" onclick="window.open(CONFIG.CLAIM_FORM_URL, '_blank')">
+            <div>${name}</div>
+            ${claim ? `<div class="signup-claim-tag">${claim.evaluator} · ${claim.date} ${claim.time}</div>` : ''}
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `).join('');
 }
+
 const RESPONSE_FIELDS = [
   { idx: 5, label: "Correct Uniform?" },
   { idx: 6, label: "Communication Skills" }, { idx: 7, label: "— explanation" },
@@ -580,11 +526,6 @@ function renderSubmissionLog(){
     el.innerHTML = `<div class="empty-tier">No submissions yet.</div>`;
     return;
   }
-  // Real sheet column order:
-  // 0 Timestamp, 1 Tour Time, 2 Tour Date, 3 Guide Name, 4 Evaluator, 5 Uniform,
-  // 6 Communication, 7 explain, 8 Spirit, 9 explain, 10 Knowledge, 11 explain,
-  // 12 Adapt, 13 explain, 14 Professionalism, 15 explain, 16 Engagement, 17 explain,
-  // 18 Timing, 19 explain, 20 Notes, 21 Overall
   el.innerHTML = submissionRows.slice().reverse().map((r,i)=>{
     const timestamp=r[0], guide=r[3], evaluator=r[4], overall=r[21];
     const detailRows = RESPONSE_FIELDS.map(f => r[f.idx] ? `
@@ -615,8 +556,25 @@ function boot(){
     loadTab(CONFIG.SUBMISSIONS_GID, (json2)=>{
       submissionRows = rowsFromGviz(json2).filter(r => r[0]);
       renderSubmissionLog();
+      loadClaimSheet();
     });
   });
+}
+
+function loadClaimSheet(){
+  window.google = window.google || {};
+  window.google.visualization = window.google.visualization || {};
+  window.google.visualization.Query = window.google.visualization.Query || {};
+  window.google.visualization.Query.setResponse = function(json){
+    claimRows = rowsFromGviz(json).filter(r => r[0]);
+    renderSignup();
+    tag.remove();
+  };
+  const url = `https://docs.google.com/spreadsheets/d/${CONFIG.CLAIM_SHEET_ID}/gviz/tq?tqx=out:json&gid=${CONFIG.CLAIM_GID}&ts=${Date.now()}`;
+  const tag = document.createElement('script');
+  tag.src = url;
+  tag.onerror = () => { renderSignup(); };
+  document.body.appendChild(tag);
 }
 boot();
 </script>
