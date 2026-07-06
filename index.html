@@ -356,6 +356,21 @@ function renderShell(){
         </div>
       </div>
     </div>
+
+    <div class="modal-bg" id="claimModalBg">
+      <div class="modal" style="width:340px;">
+        <h3>Claim an Eval</h3>
+        <p style="font-size:13px;color:var(--text-dim);margin-top:-8px;">Evaluating: <b id="claimGuideLabel" style="color:var(--text);"></b></p>
+        <input type="text" id="claimEvaluator" placeholder="Your name">
+        <input type="date" id="claimDate">
+        <input type="time" id="claimTime">
+        <div class="modal-err" id="claimErr"></div>
+        <div class="modal-actions">
+          <button class="btn" onclick="closeClaimModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="submitClaim()">Claim</button>
+        </div>
+      </div>
+    </div>
   `;
 
   document.querySelectorAll('.tab').forEach(t=>{
@@ -479,8 +494,9 @@ function renderTable(){
 /* ============================================================
    SIGN UP FOR TOURS
    Improvised for now: shows Tracker guides with no evaluator
-   assigned yet, sorted most-urgent-first. "Claim" sends an email
-   to the coordinator. Swap this for a real schedule sheet once
+   assigned yet, sorted most-urgent-first. "Claim" opens a modal
+   for your name + eval date/time, then emails it to the
+   coordinator. Swap this for a real schedule sheet once
    CONFIG.SIGNUP_SHEET_ID / SIGNUP_GID are set.
    ============================================================ */
 function renderSignup(){
@@ -490,8 +506,8 @@ function renderSignup(){
   noteEl.innerHTML = usingPlaceholder ? `
     <p style="color:var(--text-dim);font-size:13px;max-width:700px;">
       This is a placeholder view built from the Tracker tab — it lists guides who don't have an evaluator
-      assigned yet, most urgent first. "Claim" opens an email to the coordinator. Once the real tour
-      schedule sheet exists, this will show actual open time slots instead.
+      assigned yet, most urgent first. "Claim" asks for your name and eval date/time, then emails that to
+      the coordinator. Once the real tour schedule sheet exists, this will show actual open time slots instead.
     </p>
   ` : '';
 
@@ -506,16 +522,45 @@ function renderSignup(){
   const bodyRows = unassigned.length ? unassigned.map(r=>{
     const tier = tierFor(r[2]);
     const name = `${r[0]||''} ${r[1]||''}`.trim();
-    const subject = encodeURIComponent(`Claiming eval: ${name}`);
-    const body = encodeURIComponent(`Hi! I'd like to claim evaluating ${name} (currently: ${tier.name}). I'll schedule a tour time and update the tracker.`);
     return `<tr>
       <td class="name-cell">${name}</td>
       <td><span class="priority-pill" style="background:${tier.color};color:${tier.text};">${tier.name}</span></td>
-      <td><a class="btn btn-primary" style="text-decoration:none;font-size:12px;padding:6px 12px;" href="mailto:${CONFIG.COORDINATOR_EMAIL}?subject=${subject}&body=${body}">Claim</a></td>
+      <td><button class="btn btn-primary" style="font-size:12px;padding:6px 12px;" onclick="openClaimModal('${name.replace(/'/g,"\\'")}','${tier.name}')">Claim</button></td>
     </tr>`;
   }).join('') : `<tr><td colspan="3" style="text-align:center;color:var(--text-dim);padding:24px;">Everyone who needs an eval already has one assigned. 🎉</td></tr>`;
 
   table.innerHTML = theadHtml + `<tbody>${bodyRows}</tbody>`;
+}
+
+let claimGuideName = '', claimTierName = '';
+function openClaimModal(name, tierName){
+  claimGuideName = name;
+  claimTierName = tierName;
+  document.getElementById('claimGuideLabel').textContent = name;
+  document.getElementById('claimEvaluator').value = '';
+  document.getElementById('claimDate').value = '';
+  document.getElementById('claimTime').value = '';
+  document.getElementById('claimErr').textContent = '';
+  document.getElementById('claimModalBg').classList.add('open');
+  document.getElementById('claimEvaluator').focus();
+}
+function closeClaimModal(){
+  document.getElementById('claimModalBg').classList.remove('open');
+}
+function submitClaim(){
+  const evaluator = document.getElementById('claimEvaluator').value.trim();
+  const date = document.getElementById('claimDate').value;
+  const time = document.getElementById('claimTime').value;
+  if(!evaluator || !date || !time){
+    document.getElementById('claimErr').textContent = 'Fill in your name, date, and time.';
+    return;
+  }
+  const subject = encodeURIComponent(`Claiming eval: ${claimGuideName}`);
+  const body = encodeURIComponent(
+    `Evaluator: ${evaluator}\nGuide: ${claimGuideName} (${claimTierName})\nTour date: ${date}\nTour time: ${time}\n\nPlease update the Tracker with this info.`
+  );
+  window.location.href = `mailto:${CONFIG.COORDINATOR_EMAIL}?subject=${subject}&body=${body}`;
+  closeClaimModal();
 }
 const RESPONSE_FIELDS = [
   { idx: 5, label: "Correct Uniform?" },
