@@ -65,27 +65,29 @@ function tierFor(name){
 const style = document.createElement('style');
 style.textContent = `
   :root{
-    --black:#0a0908;
-    --panel:#161412;
-    --panel-2:#1e1b18;
+    --black:#0a1128;
+    --panel:#131c3f;
+    --panel-2:#1a2650;
     --gold:#CFB991;
     --gold-bright:#e8d5a8;
     --gold-dim:#8f8067;
     --steel:#9D9795;
     --text:#F5F3EE;
     --text-dim:#a39c8f;
-    --border:#2b2621;
+    --border:#2d3d78;
     --radius:12px;
     --shadow-soft: 0 4px 16px rgba(0,0,0,.35);
     --shadow-lift: 0 10px 28px rgba(0,0,0,.45);
+    --comic-pop: 3px 3px 0 rgba(0,0,0,.5);
   }
   *{box-sizing:border-box;}
   ::selection{ background:var(--gold); color:#100c00; }
   body{
     margin:0;
     background:
-      radial-gradient(1100px 500px at 12% -10%, rgba(207,185,145,.06), transparent 60%),
-      radial-gradient(900px 500px at 100% 0%, rgba(207,185,145,.04), transparent 55%),
+      radial-gradient(1200px 600px at 15% -10%, rgba(207,185,145,.08), transparent 60%),
+      radial-gradient(900px 600px at 100% 0%, rgba(60,90,200,.15), transparent 55%),
+      radial-gradient(circle, rgba(207,185,145,.05) 1.5px, transparent 1.5px) 0 0/22px 22px,
       var(--black);
     color:var(--text);
     font-family:'Inter',sans-serif;
@@ -112,17 +114,18 @@ style.textContent = `
     background:rgba(10,9,8,.82);
     backdrop-filter:blur(10px) saturate(1.1);
     -webkit-backdrop-filter:blur(10px) saturate(1.1);
-    border-bottom:1px solid var(--border);
+    border-bottom:2px solid var(--gold-dim);
     padding:16px 28px;
     display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
   }
   .brand{ display:flex; align-items:center; gap:14px; }
   .brand .mark{
-    width:40px;height:40px;border-radius:50%;
+    width:42px;height:42px;border-radius:50%;
     background:linear-gradient(150deg, var(--gold-bright), var(--gold-dim));
-    color:#100c00;
-    display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:700;font-size:18px;
-    box-shadow:0 2px 10px rgba(207,185,145,.25);
+    color:#0a1128;
+    display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:700;font-size:19px;
+    border:2.5px solid #0a1128;
+    box-shadow:0 0 0 2px var(--gold-dim), 0 2px 10px rgba(207,185,145,.3);
   }
   .brand h1{ font-size:19px; margin:0; color:var(--text); line-height:1.1; }
   .brand .sub{ font-size:12px; color:var(--text-dim); text-transform:none; letter-spacing:0; font-family:'Inter'; margin-top:2px; }
@@ -135,8 +138,9 @@ style.textContent = `
   }
   .btn:hover{ border-color:var(--gold); color:var(--gold-bright); }
   .btn:active{ transform:scale(.97); }
-  .btn-primary{ background:linear-gradient(150deg, var(--gold-bright), var(--gold)); color:#100c00; border-color:var(--gold); font-weight:700; box-shadow:0 2px 10px rgba(207,185,145,.18); }
-  .btn-primary:hover{ background:var(--gold-bright); color:#100c00; box-shadow:0 4px 14px rgba(207,185,145,.3); }
+  .btn-primary{ background:linear-gradient(150deg, var(--gold-bright), var(--gold)); color:#0a1128; border:2px solid #0a1128; font-weight:700; box-shadow:var(--comic-pop); }
+  .btn-primary:hover{ background:var(--gold-bright); color:#0a1128; transform:translate(-1px,-1px); box-shadow:4px 4px 0 rgba(0,0,0,.5); }
+  .btn-primary:active{ transform:translate(1px,1px); box-shadow:1px 1px 0 rgba(0,0,0,.5); }
   .badge-admin{
     font-family:'Space Mono'; font-size:10.5px; background:#3d3218; color:var(--gold-bright);
     padding:5px 11px; border-radius:20px; border:1px solid var(--gold-dim); letter-spacing:.08em;
@@ -175,7 +179,7 @@ style.textContent = `
   }
   .stat b{ display:block; font-family:'Oswald'; font-size:26px; color:var(--gold-bright); letter-spacing:0; margin-bottom:2px; text-transform:none; }
 
-  .table-wrap{ border:1px solid var(--border); border-radius:var(--radius); overflow:auto; background:var(--panel); box-shadow:var(--shadow-soft); }
+  .table-wrap{ border:1.5px solid var(--border); border-radius:var(--radius); overflow:auto; background:var(--panel); box-shadow:var(--shadow-soft); }
   table.tracker-table{ width:100%; border-collapse:collapse; font-size:13px; min-width:820px; }
   table.tracker-table th{
     position:sticky; top:0; background:var(--panel-2); text-align:left; padding:13px 16px;
@@ -190,7 +194,8 @@ style.textContent = `
   table.tracker-table tr:hover td{ background:var(--panel-2); }
   .priority-pill{
     display:inline-block; padding:5px 12px; border-radius:20px; font-family:'Space Mono'; font-size:10.5px;
-    font-weight:700; white-space:nowrap; letter-spacing:.03em; box-shadow:0 1px 6px rgba(0,0,0,.25);
+    font-weight:700; white-space:nowrap; letter-spacing:.03em;
+    border:1.5px solid rgba(0,0,0,.4); box-shadow:2px 2px 0 rgba(0,0,0,.35);
   }
   .name-cell{ font-weight:600; }
   .signup-note{ margin-bottom:16px; }
@@ -205,14 +210,14 @@ style.textContent = `
     border-radius:9px; padding:10px 10px; cursor:pointer; transition:transform .12s ease, box-shadow .12s ease, filter .12s ease;
     font-size:12px; font-weight:700; text-align:center; min-height:48px;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
-    box-shadow:0 2px 6px rgba(0,0,0,.25);
+    border:1.5px solid rgba(0,0,0,.35); box-shadow:2px 2px 0 rgba(0,0,0,.35);
   }
-  .signup-cell:hover{ filter:brightness(1.1); transform:translateY(-2px); box-shadow:0 6px 14px rgba(0,0,0,.35); }
+  .signup-cell:hover{ filter:brightness(1.1); transform:translate(-1px,-1px); box-shadow:4px 4px 0 rgba(0,0,0,.4); }
   .signup-claim-tag{ font-family:'Space Mono'; font-size:9.5px; font-weight:400; opacity:.9; }
   .empty-tier{ padding:30px 24px; color:var(--text-dim); font-size:13px; font-style:italic; text-align:center; }
 
   .form-card{
-    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:32px;
+    background:var(--panel); border:1.5px solid var(--gold-dim); border-radius:var(--radius); padding:32px;
     max-width:760px; margin:0 auto; box-shadow:var(--shadow-soft);
   }
   .form-card h2{ font-size:21px; margin-top:0; color:var(--gold-bright); }
